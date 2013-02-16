@@ -1,6 +1,8 @@
 {-# LANGUAGE ParallelListComp #-}
 
 import Graphics.Gnuplot.Simple
+import Test.QuickCheck
+import Control.Applicative
 
 type Coord = Double
 type Coord1 = Double
@@ -143,6 +145,23 @@ test = and
   -- Middle
   , interpolate2test1 (0.5, 0.5) == 2.5
   ]
+
+
+
+
+qc = quickCheck $ forAll gen01 $ \(x, y) ->
+  abs (interpolateNtest2 [x, y] - interpolate2test1 (x, y)) < 1e-6
+  where
+    gen01 = (,) <$> choose (0, 1) <*> choose (0, 1)
+
+
+interpolate3test1 = interpolate3 (0,1) (0,1) (5,7) (1, 4, 2, 3, 1, 0, 9, 1)
+interpolateNtest3 = interpolateN [(0,1),(0,1),(5,7)] [1, 4, 2, 3, 1, 0, 9, 1]
+
+qc3 = quickCheck $ forAll gen01 $ \(x, y, z) ->
+  abs (interpolateNtest3 [x, y, z] - interpolate3test1 (x, y, z)) < 1e-6
+  where
+    gen01 = (,,) <$> choose (0, 1) <*> choose (0, 1) <*> choose (5, 7)
 
 
 main = let xs = [0,0.1..0.9::Double] ++ [1.0]
