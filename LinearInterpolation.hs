@@ -24,27 +24,12 @@ interpolate2 (a0, a1) (b0, b1) (a0b0, a0b1, a1b0, a1b1) (ax, bx)
   | not (b0 <= bx && bx <= b1) = error $ "bx not in bounds " ++ show bx
   | otherwise                  = f
   where
-    dista = a1 - a0
-    distb = b1 - b0
-    distax = ax - a0
-    distbx = bx - b0
-    fraca     = distax / dista
-    fracb     = distbx / distb
-
-    steepOna0 = (a0b1 - a0b0) / distb
-    steepOna1 = (a1b1 - a1b0) / distb
-    steepOnb0 = (a1b0 - a0b0) / dista
-    steepOnb1 = (a1b1 - a0b1) / dista
-
-    starta0 = a0b0 + distbx * steepOna0
-    startb0 = a0b0 + distax * steepOnb0
-
-    enda1 = a1b0 + distbx * steepOna1
-    endb1 = a0b1 + distax * steepOnb1
-
-    f = ( ( starta0 * (1-fraca) + enda1 * fraca ) +
-          ( startb0 * (1-fracb) + endb1 * fracb )
-        ) / 2
+    -- From: http://en.wikipedia.org/wiki/Bilinear_interpolation
+    f = ( a0b0 * (a1 - ax) * (b1 - bx)
+        + a1b0 * (ax - a0) * (b1 - bx)
+        + a0b1 * (a1 - ax) * (bx - b0)
+        + a1b1 * (ax - a0) * (bx - b0)
+        ) / ((a1 - a0) * (b1 - b0))
 
 -- For the bounds:
 --       b0   b1
