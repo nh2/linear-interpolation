@@ -35,15 +35,10 @@ interpolate2 (a0, a1) (b0, b1) (a0b0, a0b1, a1b0, a1b1) (ax, bx)
                                  traceShow ("steepOna1", steepOna1) $
                                  traceShow ("steepOnb0", steepOnb0) $
                                  traceShow ("steepOnb1", steepOnb1) $
-                                 -- traceShow ("a0b0 + distax * steepOna1 * fraca", a0b0 + distax * steepOna1 * fraca) $
-                                 -- traceShow ("a1b0 + distax * steepOna0 * (1 - fraca)", a1b0 + distax * steepOna0 * (1 - fraca)) $
-                                 -- traceShow ("a0b0 + distbx * steepOnb1 * fracb", a0b0 + distbx * steepOnb1 * fracb) $
-                                 -- traceShow ("a0b1 + distbx * steepOnb0 * (1 - fracb)", a0b1 + distbx * steepOnb0 * (1 - fracb)) $
                                  traceShow ("starta0", starta0) $
                                  traceShow ("startb0", startb0) $
                                  traceShow ("enda1", enda1) $
                                  traceShow ("endb1", endb1) $
-                                 -- traceShow ("", ) $
                                  f
   where
     dista = a1 - a0
@@ -67,16 +62,6 @@ interpolate2 (a0, a1) (b0, b1) (a0b0, a0b1, a1b0, a1b1) (ax, bx)
     f = ( ( starta0 * (1-fraca) + enda1 * fraca ) +
           ( startb0 * (1-fracb) + endb1 * fracb )
         ) / 2
-    -- f = ((a0b0 + distbx * steepOna0) * (1 - fraca) +
-    --      (a1b0 + distbx * steepOna1) * fraca        +
-    --      (a0b0 + distax * steepOnb0) * (1 - fracb) +
-    --      (a0b1 + distax * steepOnb1) * fracb
-    --     ) / 4.0
-    -- f = (steepOna1 * fraca +
-    --      steepOna0 * (1 - fraca) +
-    --      steepOnb1 * fracb +
-    --      steepOnb0 * (1 - fracb)
-    --     ) / 4.0
 
 -- For the bounds:
 --       b0   b1
