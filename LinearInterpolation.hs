@@ -2,6 +2,7 @@
 
 import Graphics.Gnuplot.Simple
 import Test.QuickCheck
+import Test.QuickCheck.Function
 import Control.Applicative
 
 type Coord = Double
@@ -41,6 +42,17 @@ interpolate2 (a0, a1) (b0, b1) (a0b0, a0b1, a1b0, a1b1) (ax, bx)
         + a1b1 * a_dist * b_dist
         ) / ((a1 - a0) * (b1 - b0))
 
+
+interpolate2fun :: ((Int, Int) -> V) -> Coord2 -> V
+interpolate2fun f (ax, bx) = interpolate2 (fi a0, fi a1) (fi b0, fi b1) (f (a0,b0), f (a0,b1), f (a1,b0), f (a1,b1)) (ax, bx)
+  where
+    fi = fromIntegral
+    a0 = floor ax   :: Int
+    a1 = ceiling ax :: Int
+    b0 = floor bx   :: Int
+    b1 = ceiling bx :: Int
+
+
 interpolate3 :: Bound -> Bound -> Bound -> (V, V, V, V, V, V, V, V) -> Coord3 -> V
 interpolate3 (a0, a1) (b0, b1) (c0, c1) ( a0b0c0
                                         , a0b0c1
@@ -75,22 +87,55 @@ interpolate3 (a0, a1) (b0, b1) (c0, c1) ( a0b0c0
         ) / ((a1 - a0) * (b1 - b0) * (c1 - c0))
 
 
+interpolate3fun :: (Coord3 -> V) -> Coord3 -> V
+interpolate3fun f (ax, bx, cx) = interpolate3 (a0, a1)
+                                              (b0, b1)
+                                              (c0, c1) ( f (a0,b0,c0)
+                                                       , f (a0,b0,c1)
+                                                       , f (a0,b1,c0)
+                                                       , f (a0,b1,c1)
+                                                       , f (a1,b0,c0)
+                                                       , f (a1,b0,c1)
+                                                       , f (a1,b1,c0)
+                                                       , f (a1,b1,c1) ) (ax, bx, cx)
+  where
+    a0 = fromIntegral (floor ax   :: Int)
+    a1 = fromIntegral (ceiling ax :: Int)
+    b0 = fromIntegral (floor bx   :: Int)
+    b1 = fromIntegral (ceiling bx :: Int)
+    c0 = fromIntegral (floor cx   :: Int)
+    c1 = fromIntegral (ceiling cx :: Int)
+
+
 interpolateN :: [Bound] -> [V] -> [Coord] -> V
-interpolateN bounds vals coords
-  | dim < 1              = err $ "cannot interpolate in " ++ show dim ++ " dimentions, need at least 1"
-  | length coords /= dim = err $ "dimension of position to interpolate (" ++ show (length coords) ++ ") does not match bounds dimension (" ++ show dim ++ ")"
-  | length vals /= 2^dim = err $ "number of boundary values (" ++ show (length vals) ++ ") does not match bounds dimension (" ++ show dim ++ ")"
-  | otherwise            = f
+interpolateN bounds cornerVals coords
+  | dim < 1                    = err $ "cannot interpolate in " ++ show dim ++ " dimentions, need at least 1"
+  | length coords     /= dim   = err $ "dimension of position to interpolate (" ++ show (length coords) ++ ") does not match bounds dimension (" ++ show dim ++ ")"
+  | length cornerVals /= 2^dim = err $ "number of boundary values (" ++ show (length cornerVals) ++ ") does not match bounds dimension (" ++ show dim ++ ")"
+  | otherwise                  = f
   where
     err s = error $ "interpolateN: " ++ s
     dim = length bounds
 
     f = sum [ v * product weights
-               | v <- vals
+               | v <- cornerVals
                | weights <- sequence [ [b1-x, x-b0] | (b0, b1) <- bounds
                                                     | x        <- coords ]
                ]
         / product [ b1 - b0 | (b0, b1) <- bounds ]
+
+
+
+-- TODO dimension check: dim (f x) == dim coords
+interpolateNfun :: ([Int] -> V) -> [Coord] -> V
+interpolateNfun f coords = interpolateN (fi2 <$> bounds) cornerVals coords
+  where
+    fi2 (a, b) = (fromIntegral a, fromIntegral b)
+    bounds = [ (floor c, ceiling c) | c <- coords ]
+    toLists = map (\(x, y) -> [x, y])
+    cornerVals = [ f cornerCoord | cornerCoord <- sequence (toLists bounds) ]
+
+
 
 
 interpolateNtest1 = interpolateN [(0,1)] [0,1]
@@ -167,3 +212,14 @@ qc3 = quickCheck $ forAll gen01 $ \(x, y, z) ->
 main = let xs = [0,0.1..0.9::Double] ++ [1.0]
         -- in plotFunc3d [] [] xs xs (\x y -> exp(-(x*x+y*y)))
         in plotFunc3d [] [] xs xs (\x y -> interpolate2test1 (x, y))
+
+
+prop :: Fun String Integer -> Bool
+prop (Fun _ f) = f "monkey" == f "banana" || f "banana" == f "elephant"
+
+
+propAnyF :: Fun (Int, Int) Double -> Gen Bool
+propAnyF (Fun _ f) = do
+  (a, b) <- arbitrary
+  let list2tup [a, b] = (a, b)
+  return $ interpolate2fun f (a, b) == interpolateNfun (f . list2tup) [a, b]
